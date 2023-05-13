@@ -149,7 +149,7 @@
       <OutputFile>$(OutDir)UvttThumbnailProvider.dll</OutputFile>
       <ModuleDefinitionFile>UvttThumbnailProvider.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>$(OutDir)RecipeHandlers.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>$(OutDir)UvttHandlers.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>true</RandomizedBaseAddress>
       <DataExecutionPrevention>true</DataExecutionPrevention>
@@ -213,17 +213,19 @@
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
-      <OutputFile>$(OutDir)RecipeThumbnailProvider.dll</OutputFile>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OutputFile>$(OutDir)UvttThumbnailProvider.dll</OutputFile>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <RandomizedBaseAddress>true</RandomizedBaseAddress>
       <DataExecutionPrevention>true</DataExecutionPrevention>
-      <ImportLibrary>$(OutDir)RecipeThumbnailProvider.lib</ImportLibrary>
+      <ImportLibrary>$(OutDir)UvttThumbnailProvider.lib</ImportLibrary>
       <TargetMachine>MachineX64</TargetMachine>
+      <ModuleDefinitionFile>UvttThumbnailProvider.def</ModuleDefinitionFile>
     </Link>
     <PreBuildEvent>
       <Command>
