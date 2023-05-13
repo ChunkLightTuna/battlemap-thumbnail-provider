@@ -1,9 +1,0 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
-
-/.idea/.idea.ThumbnailProviderSample/.idea
-/x64/Debug
-/.vs/ThumbnailProviderSample
-/RecipeThumbnailProvider.vcxproj.user
-/.vs/UvttThumbnailProvider/v17
