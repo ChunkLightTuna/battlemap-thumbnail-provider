@@ -12,6 +12,16 @@
 #include <msxml6.h>
 #include <new>
 
+#include <winrt/windows.data.json.h>
+#include <winrt/windows.storage.streams.h>
+#include <winrt/windows.foundation.h>
+#include <iostream>
+#include <winrt/base.h>
+
+using namespace winrt;
+using namespace Windows::Storage::Streams;
+using namespace Windows::Data::Json;
+
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "windowscodecs.lib")
 #pragma comment(lib, "Crypt32.lib")
@@ -21,7 +31,7 @@
 // in an isolated process for robustness
 
 class CRecipeThumbProvider : public IInitializeWithStream,
-                             public IThumbnailProvider
+    public IThumbnailProvider
 {
 public:
     CRecipeThumbProvider() : _cRef(1), _pStream(NULL)
@@ -37,7 +47,7 @@ public:
     }
 
     // IUnknown
-    IFACEMETHODIMP QueryInterface(REFIID riid, void **ppv)
+    IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv)
     {
         static const QITAB qit[] =
         {
@@ -64,23 +74,22 @@ public:
     }
 
     // IInitializeWithStream
-    IFACEMETHODIMP Initialize(IStream *pStream, DWORD grfMode);
+    IFACEMETHODIMP Initialize(IStream* pStream, DWORD grfMode);
 
     // IThumbnailProvider
-    IFACEMETHODIMP GetThumbnail(UINT cx, HBITMAP *phbmp, WTS_ALPHATYPE *pdwAlpha);
+    IFACEMETHODIMP GetThumbnail(UINT cx, HBITMAP* phbmp, WTS_ALPHATYPE* pdwAlpha);
 
 private:
-    HRESULT _LoadXMLDocument( IXMLDOMDocument **ppXMLDoc);
-    HRESULT _GetBase64EncodedImageString(UINT cx, PWSTR *ppszResult);
-    HRESULT _GetStreamFromString(PCWSTR pszImageName, IStream **ppStream);
+    HRESULT _GetBase64EncodedImageString(UINT cx, PWSTR* ppszResult);
+    HRESULT _GetStreamFromString(PCWSTR pszImageName, IStream** ppStream);
 
     long _cRef;
-    IStream *_pStream;     // provided during initialization.
+    IStream* _pStream;     // provided during initialization.
 };
 
-HRESULT CRecipeThumbProvider_CreateInstance(REFIID riid, void **ppv)
+HRESULT CRecipeThumbProvider_CreateInstance(REFIID riid, void** ppv)
 {
-    CRecipeThumbProvider *pNew = new (std::nothrow) CRecipeThumbProvider();
+    CRecipeThumbProvider* pNew = new (std::nothrow) CRecipeThumbProvider();
     HRESULT hr = pNew ? S_OK : E_OUTOFMEMORY;
     if (SUCCEEDED(hr))
     {
@@ -91,7 +100,7 @@ HRESULT CRecipeThumbProvider_CreateInstance(REFIID riid, void **ppv)
 }
 
 // IInitializeWithStream
-IFACEMETHODIMP CRecipeThumbProvider::Initialize(IStream *pStream, DWORD)
+IFACEMETHODIMP CRecipeThumbProvider::Initialize(IStream* pStream, DWORD)
 {
     HRESULT hr = E_UNEXPECTED;  // can only be inited once
     if (_pStream == NULL)
@@ -102,101 +111,63 @@ IFACEMETHODIMP CRecipeThumbProvider::Initialize(IStream *pStream, DWORD)
     return hr;
 }
 
-HRESULT CRecipeThumbProvider::_LoadXMLDocument(IXMLDOMDocument **ppXMLDoc)
-{
-    *ppXMLDoc = NULL;
-
-    IXMLDOMDocument *pXMLDoc;
-    HRESULT hr = CoCreateInstance(CLSID_DOMDocument60, 0, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pXMLDoc));
-    if (SUCCEEDED(hr))
-    {
-        IPersistStream *pps;
-        hr = pXMLDoc->QueryInterface(&pps);
-        if (SUCCEEDED(hr))
-        {
-            hr = pps->Load(_pStream);
-            if (SUCCEEDED(hr))
-            {
-                hr = pXMLDoc->QueryInterface(ppXMLDoc);
-            }
-            pps->Release();
-        }
-        pXMLDoc->Release();
-    }
-    return hr;
-}
-
-// Gets the base64-encoded string which represents the image.
-HRESULT CRecipeThumbProvider::_GetBase64EncodedImageString(UINT /* cx */, PWSTR *ppszResult)
+HRESULT CRecipeThumbProvider::_GetBase64EncodedImageString(UINT /* cx */, PWSTR* ppszResult)
 {
     *ppszResult = NULL;
 
-    IXMLDOMDocument *pXMLDoc;
-    HRESULT hr = _LoadXMLDocument(&pXMLDoc);
-    if (SUCCEEDED(hr))
+    // Read the data from the stream into a vector
+    const size_t bufferSize = 4096;
+    std::vector<char> buffer(bufferSize);
+    std::stringstream ss;
+    ULONG bytesRead = 0;
+    bool keepGoing = true;
+    HRESULT hr = E_UNEXPECTED;
+    while (keepGoing)
     {
-        BSTR bstrQuery = SysAllocString(L"Recipe/Attachments/Picture");
-        hr = bstrQuery ? S_OK : E_OUTOFMEMORY;
-        if (SUCCEEDED(hr))
-        {
-            IXMLDOMNode *pXMLNode;
-            hr = pXMLDoc->selectSingleNode(bstrQuery, &pXMLNode);
-            if (SUCCEEDED(hr))
-            {
-                IXMLDOMElement *pXMLElement;
-                hr = pXMLNode->QueryInterface(&pXMLElement);
-                if (SUCCEEDED(hr))
-                {
-                    BSTR bstrAttribute = SysAllocString(L"Source");
-                    hr = bstrAttribute ? S_OK : E_OUTOFMEMORY;
-                    if (SUCCEEDED(hr))
-                    {
-                        VARIANT varValue;
-                        hr = pXMLElement->getAttribute(bstrAttribute, &varValue);
-                        if (SUCCEEDED(hr))
-                        {
-                            if ((varValue.vt == VT_BSTR) && varValue.bstrVal && varValue.bstrVal[0])
-                            {
-                                hr = SHStrDupW(varValue.bstrVal, ppszResult);
-                            }
-                            else
-                            {
-                                hr = E_FAIL;
-                            }
-                            VariantClear(&varValue);
-                        }
-                        SysFreeString(bstrAttribute);
-                    }
-                    pXMLElement->Release();
-                }
-                pXMLNode->Release();
-            }
-            SysFreeString(bstrQuery);
+        hr = _pStream->Read(buffer.data(), bufferSize, &bytesRead);
+
+        keepGoing = SUCCEEDED(hr) && bytesRead > 0;
+        if (keepGoing) {
+            ss.write(buffer.data(), bytesRead);
         }
-        pXMLDoc->Release();
     }
-    return hr;
+
+    //while (SUCCEEDED(stream->Read(buffer.data(), bufferSize, &bytesRead)) && bytesRead > 0)
+    //{
+    //    ss.write(buffer.data(), bytesRead);
+    //}
+
+    JsonObject jsonFromStream = JsonObject::Parse(to_hstring(ss.str()));
+    hstring imageFromStream = jsonFromStream.GetNamedString(L"image");
+
+    std::wstring last10 = std::wstring(imageFromStream.c_str() + imageFromStream.size() - 10, 10); //sanity check
+
+    SHStrDupW((wchar_t*)imageFromStream.c_str(), ppszResult);
+    std::wcout << last10;
+
+    //TODO error handling ^_^
+    return S_OK;
 }
 
 // Decodes the base64-encoded string to a stream.
-HRESULT CRecipeThumbProvider::_GetStreamFromString(PCWSTR pszImageName, IStream **ppImageStream)
+HRESULT CRecipeThumbProvider::_GetStreamFromString(PCWSTR pszImageName, IStream** ppImageStream)
 {
     HRESULT hr = E_FAIL;
 
     DWORD dwDecodedImageSize = 0;
-    DWORD dwSkipChars        = 0;
-    DWORD dwActualFormat     = 0;
+    DWORD dwSkipChars = 0;
+    DWORD dwActualFormat = 0;
 
     // Base64-decode the string
     BOOL fSuccess = CryptStringToBinaryW(pszImageName, NULL, CRYPT_STRING_BASE64,
-                                         NULL, &dwDecodedImageSize, &dwSkipChars, &dwActualFormat);
+        NULL, &dwDecodedImageSize, &dwSkipChars, &dwActualFormat);
     if (fSuccess)
     {
-        BYTE *pbDecodedImage = (BYTE*)LocalAlloc(LPTR, dwDecodedImageSize);
+        BYTE* pbDecodedImage = (BYTE*)LocalAlloc(LPTR, dwDecodedImageSize);
         if (pbDecodedImage)
         {
             fSuccess = CryptStringToBinaryW(pszImageName, lstrlenW(pszImageName), CRYPT_STRING_BASE64,
-                                            pbDecodedImage, &dwDecodedImageSize, &dwSkipChars, &dwActualFormat);
+                pbDecodedImage, &dwDecodedImageSize, &dwSkipChars, &dwActualFormat);
             if (fSuccess)
             {
                 *ppImageStream = SHCreateMemStream(pbDecodedImage, dwDecodedImageSize);
@@ -211,18 +182,18 @@ HRESULT CRecipeThumbProvider::_GetStreamFromString(PCWSTR pszImageName, IStream 
     return hr;
 }
 
-HRESULT ConvertBitmapSourceTo32BPPHBITMAP(IWICBitmapSource *pBitmapSource,
-                                           IWICImagingFactory *pImagingFactory,
-                                           HBITMAP *phbmp)
+HRESULT ConvertBitmapSourceTo32BPPHBITMAP(IWICBitmapSource* pBitmapSource,
+    IWICImagingFactory* pImagingFactory,
+    HBITMAP* phbmp)
 {
     *phbmp = NULL;
 
-    IWICBitmapSource *pBitmapSourceConverted = NULL;
+    IWICBitmapSource* pBitmapSourceConverted = NULL;
     WICPixelFormatGUID guidPixelFormatSource;
     HRESULT hr = pBitmapSource->GetPixelFormat(&guidPixelFormatSource);
     if (SUCCEEDED(hr) && (guidPixelFormatSource != GUID_WICPixelFormat32bppBGRA))
     {
-        IWICFormatConverter *pFormatConverter;
+        IWICFormatConverter* pFormatConverter;
         hr = pImagingFactory->CreateFormatConverter(&pFormatConverter);
         if (SUCCEEDED(hr))
         {
@@ -254,12 +225,12 @@ HRESULT ConvertBitmapSourceTo32BPPHBITMAP(IWICBitmapSource *pBitmapSource,
             bmi.bmiHeader.biBitCount = 32;
             bmi.bmiHeader.biCompression = BI_RGB;
 
-            BYTE *pBits;
-            HBITMAP hbmp = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, reinterpret_cast<void **>(&pBits), NULL, 0);
+            BYTE* pBits;
+            HBITMAP hbmp = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, reinterpret_cast<void**>(&pBits), NULL, 0);
             hr = hbmp ? S_OK : E_OUTOFMEMORY;
             if (SUCCEEDED(hr))
             {
-                WICRect rect = {0, 0, nWidth, nHeight};
+                WICRect rect = { 0, 0, (int)nWidth, (int)nHeight };
 
                 // Convert the pixels and store them in the HBITMAP.  Note: the name of the function is a little
                 // misleading - we're not doing any extraneous copying here.  CopyPixels is actually converting the
@@ -280,19 +251,19 @@ HRESULT ConvertBitmapSourceTo32BPPHBITMAP(IWICBitmapSource *pBitmapSource,
     return hr;
 }
 
-HRESULT WICCreate32BitsPerPixelHBITMAP(IStream *pstm, UINT /* cx */, HBITMAP *phbmp, WTS_ALPHATYPE *pdwAlpha)
+HRESULT WICCreate32BitsPerPixelHBITMAP(IStream* pstm, UINT /* cx */, HBITMAP* phbmp, WTS_ALPHATYPE* pdwAlpha)
 {
     *phbmp = NULL;
 
-    IWICImagingFactory *pImagingFactory;
+    IWICImagingFactory* pImagingFactory;
     HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pImagingFactory));
     if (SUCCEEDED(hr))
     {
-        IWICBitmapDecoder *pDecoder;
+        IWICBitmapDecoder* pDecoder;
         hr = pImagingFactory->CreateDecoderFromStream(pstm, &GUID_VendorMicrosoft, WICDecodeMetadataCacheOnDemand, &pDecoder);
         if (SUCCEEDED(hr))
         {
-            IWICBitmapFrameDecode *pBitmapFrameDecode;
+            IWICBitmapFrameDecode* pBitmapFrameDecode;
             hr = pDecoder->GetFrame(0, &pBitmapFrameDecode);
             if (SUCCEEDED(hr))
             {
@@ -311,13 +282,13 @@ HRESULT WICCreate32BitsPerPixelHBITMAP(IStream *pstm, UINT /* cx */, HBITMAP *ph
 }
 
 // IThumbnailProvider
-IFACEMETHODIMP CRecipeThumbProvider::GetThumbnail(UINT cx, HBITMAP *phbmp, WTS_ALPHATYPE *pdwAlpha)
+IFACEMETHODIMP CRecipeThumbProvider::GetThumbnail(UINT cx, HBITMAP* phbmp, WTS_ALPHATYPE* pdwAlpha)
 {
     PWSTR pszBase64EncodedImageString;
     HRESULT hr = _GetBase64EncodedImageString(cx, &pszBase64EncodedImageString);
     if (SUCCEEDED(hr))
     {
-        IStream *pImageStream;
+        IStream* pImageStream;
         hr = _GetStreamFromString(pszBase64EncodedImageString, &pImageStream);
         if (SUCCEEDED(hr))
         {
