@@ -23,6 +23,7 @@
     <ProjectGuid>{3AF44F8C-A331-4D74-995A-9BDF157E4B8A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>UvttThumbnailProvider</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -143,14 +144,14 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
-      <OutputFile>$(OutDir)RecipeThumbnailProvider.dll</OutputFile>
-      <ModuleDefinitionFile>RecipeThumbnailProvider.def</ModuleDefinitionFile>
+      <OutputFile>$(OutDir)UvttThumbnailProvider.dll</OutputFile>
+      <ModuleDefinitionFile>UvttThumbnailProvider.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)RecipeHandlers.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>true</RandomizedBaseAddress>
       <DataExecutionPrevention>true</DataExecutionPrevention>
-      <ImportLibrary>$(OutDir)RecipeThumbnailProvider.lib</ImportLibrary>
+      <ImportLibrary>$(OutDir)UvttThumbnailProvider.lib</ImportLibrary>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <PreBuildEvent>
@@ -162,7 +163,7 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>regsvr32 /s "$(ProjectDir)$(OutDir)RecipeThumbnailProvider.dll"</Command>
+      <Command>regsvr32 /s "$(ProjectDir)$(OutDir)UvttThumbnailProvider.dll"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Registering DLL</Message>
@@ -242,12 +243,11 @@
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="chocolatechipcookies.recipe" />
-    <None Include="RecipeThumbnailProvider.def" />
+    <None Include="UvttThumbnailProvider.def" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Dll.cpp" />
-    <ClCompile Include="RecipeThumbnailProvider.cpp" />
+    <ClCompile Include="UvttThumbnailProvider.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
