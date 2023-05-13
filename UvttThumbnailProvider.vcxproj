@@ -85,6 +85,7 @@
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
     <CustomBuildBeforeTargets>Clean</CustomBuildBeforeTargets>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>Release\</OutDir>
@@ -102,6 +103,7 @@
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
     <CustomBuildBeforeTargets>Clean</CustomBuildBeforeTargets>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -166,7 +168,7 @@
       <Command>regsvr32 /s "$(ProjectDir)$(OutDir)UvttThumbnailProvider.dll"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Registering DLL</Message>
+      <Message>Register DLL</Message>
     </PostBuildEvent>
     <CustomBuildStep>
       <Command>
@@ -224,13 +226,15 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <PreBuildEvent>
-      <Command>regsvr32 /u /s "C:\Users\Chris\source\repos\Windows-classic-samples\Samples\Win7Samples\winui\shell\appshellintegration\RecipeThumbnailProvider\x64\Debug\RecipeThumbnailProvider.dll"</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <PreBuildEvent>
-      <Message>Deregister DLL</Message>
+      <Message>
+      </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>regsvr32 /s "C:\Users\Chris\source\repos\Windows-classic-samples\Samples\Win7Samples\winui\shell\appshellintegration\RecipeThumbnailProvider\x64\Debug\RecipeThumbnailProvider.dll"</Command>
+      <Command>regsvr32 /s "$(ProjectDir)$(OutDir)UvttThumbnailProvider.dll"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Register DLL</Message>
