@@ -240,10 +240,12 @@
       <Message>Register DLL</Message>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>regsvr32 /u "C:\Users\Chris\source\repos\Windows-classic-samples\Samples\Win7Samples\winui\shell\appshellintegration\RecipeThumbnailProvider\x64\Debug\RecipeThumbnailProvider.dll"</Command>
+      <Command>
+      </Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Message>Deregister DLL</Message>
+      <Message>
+      </Message>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
